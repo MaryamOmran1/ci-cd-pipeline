@@ -1,0 +1,65 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - release
+
+jobs:
+  # This job runs for both main and release branches
+  code-scanning:
+    name: Code Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: ${{ matrix.language }}
+
+  # CI Pipeline (Build, Test, Publish) - runs only on main
+  ci-pipeline:
+    name: CI Pipeline
+    needs: code-scanning
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK (example - change based on your tech stack)
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Build with Gradle (example)
+        run: ./gradlew build
+
+      - name: Run tests
+        run: ./gradlew test
+
+      - name: Publish artifacts
+        run: echo "Publishing artifacts..." # Replace with actual publish commands
+        # Example for publishing to GitHub Packages:
+        # run: ./gradlew publish
+
+  # CD Pipeline - runs only on release
+  cd-pipeline:
+    name: CD Pipeline
+    needs: [code-scanning, ci-pipeline]
+    if: github.ref == 'refs/heads/release'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: echo "Deploying to production..." # Replace with actual deployment commands
+        # Example for deploying to AWS:
+        # run: ./deploy-to-aws.sh
